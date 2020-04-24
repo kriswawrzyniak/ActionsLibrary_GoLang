@@ -10,9 +10,9 @@ import (
  */
 //Actions List thread safe struct
 type SafeActionsList struct {
-	mux sync.Mutex
-	m   map[string]int
-	n   map[string]int
+	mux   sync.Mutex
+	total map[string]int
+	count map[string]int
 }
 
 //Actions Decode json struct
@@ -34,8 +34,8 @@ type ActionEncode struct {
 //Actions List Constructor
 func NewSafeActionsList() *SafeActionsList {
 	list := new(SafeActionsList)
-	list.m = make(map[string]int)
-	list.n = make(map[string]int)
+	list.total = make(map[string]int)
+	list.count = make(map[string]int)
 	return list
 }
 
@@ -50,12 +50,12 @@ func (a *SafeActionsList) AddAction(jsonString string) error {
 	a.mux.Lock()
 	defer a.mux.Unlock()
 
-	if _, ok := a.m[action.Action]; ok {
-		a.m[action.Action] += action.Time
-		a.n[action.Action] += 1
+	if _, ok := a.total[action.Action]; ok {
+		a.total[action.Action] += action.Time
+		a.count[action.Action] += 1
 	} else {
-		a.m[action.Action] = action.Time
-		a.n[action.Action] = 1
+		a.total[action.Action] = action.Time
+		a.count[action.Action] = 1
 	}
 
 	return nil
@@ -68,8 +68,8 @@ func (a *SafeActionsList) Statistics() (string, error) {
 	defer a.mux.Unlock()
 
 	encodeSlice := make([]ActionEncode, 0)
-	for key, element := range a.m {
-		count := a.n[key]
+	for key, element := range a.total {
+		count := a.count[key]
 		average := element / count
 		encode := ActionEncode{
 			Action: key,
